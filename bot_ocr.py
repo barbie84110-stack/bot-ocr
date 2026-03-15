@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 """
 Bot Telegram — OCR uniquement
-Installation :
-  pip install python-telegram-bot pytesseract Pillow
-  Tesseract :
-    Windows → https://github.com/UB-Mannheim/tesseract/wiki
-    Linux   → sudo apt install tesseract-ocr tesseract-ocr-fra
-    macOS   → brew install tesseract tesseract-lang
+Compatible Python 3.13 + python-telegram-bot 21.x
 """
 
 import os
@@ -27,7 +22,6 @@ from telegram.ext import (
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "METS_TON_TOKEN_ICI")
 # ================================================================
 
-# Auto-détection Tesseract Windows
 if platform.system() == "Windows":
     _p = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
     if os.path.exists(_p):
@@ -80,7 +74,6 @@ async def _handle_image(update: Update, image_bytes: bytes):
         await update.message.reply_text("❌ Aucun texte détecté sur l'image.")
         return
 
-    # Découpe en morceaux si trop long (limite Telegram = 4096 chars)
     chunks = [text[i:i+4000] for i in range(0, len(text), 4000)]
     for i, chunk in enumerate(chunks):
         header = f"📄 <b>Texte extrait</b> (partie {i+1}/{len(chunks)}) :\n\n" if len(chunks) > 1 else "📄 <b>Texte extrait :</b>\n\n"
@@ -96,17 +89,13 @@ async def _handle_image(update: Update, image_bytes: bytes):
 
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Salut ! Envoie-moi une photo ou une image et j'en extrais le texte.\n\n"
-        "Fonctionne avec : photos, screenshots, documents scannés, étiquettes…"
+        "👋 Salut ! Envoie-moi une photo et j'en extrais le texte."
     )
 
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📖 <b>Comment utiliser :</b>\n\n"
-        "• Envoie une <b>photo</b> directement\n"
-        "• Ou envoie un fichier image (PNG, JPG, WEBP…)\n\n"
-        "Je détecte le français et l'anglais automatiquement.",
-        parse_mode="HTML",
+        "📖 Envoie une photo ou un fichier image.\n"
+        "Je détecte le français et l'anglais automatiquement."
     )
 
 async def handle_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -144,19 +133,14 @@ def main():
         pytesseract.get_tesseract_version()
         logger.info("✅ Tesseract OK")
     except pytesseract.TesseractNotFoundError:
-        logger.warning(
-            "⚠️ Tesseract introuvable.\n"
-            "  Windows : https://github.com/UB-Mannheim/tesseract/wiki\n"
-            "  Linux   : sudo apt install tesseract-ocr tesseract-ocr-fra\n"
-            "  macOS   : brew install tesseract tesseract-lang"
-        )
+        logger.warning("⚠️ Tesseract introuvable — OCR désactivé.")
 
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help",  cmd_help))
-    app.add_handler(MessageHandler(filters.PHOTO,               handle_photo))
-    app.add_handler(MessageHandler(filters.Document.IMAGE,      handle_document))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    app.add_handler(MessageHandler(filters.PHOTO,                       handle_photo))
+    app.add_handler(MessageHandler(filters.Document.IMAGE,              handle_document))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,     handle_text))
 
     logger.info("🤖 Bot OCR démarré…")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
