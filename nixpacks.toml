@@ -1,5 +1,10 @@
 [phases.setup]
-nixPkgs = ["tesseract4", "tesseract4-lang"]
+nixPkgs = ["python311", "tesseract4"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["python3.11 -m pip install -r requirements.txt"]
+
+[start]
+cmd = "python3.11 bot_ocr.py"
+```
+
